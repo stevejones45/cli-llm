@@ -3,17 +3,11 @@ import json
 import sys
 import requests
 import os
-import asyncio # Added
 from typing import Dict, Any, Optional
-from mcp_adapter import execute_mcp_tool, load_mcp_config # Added
-
-<<<<<<< HEAD
-=======
 #deepseek/deepseek-r1-zero:free
 #nousresearch/deephermes-3-mistral-24b-preview:free
 #mistralai/devstral-small:free
 #google/gemma-3n-e4b-it:free
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
 def send_to_openrouter(messages: list, model: str = "nousresearch/deephermes-3-mistral-24b-preview:free", api_key: Optional[str] = None) -> Optional[Dict[Any, Any]]:
     """
     Send messages to openrouter and return response.
@@ -22,7 +16,7 @@ def send_to_openrouter(messages: list, model: str = "nousresearch/deephermes-3-m
     model: the model to use
     api_key: openrouter API key
     """
-
+    
     if not api_key:
         api_key = os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
@@ -34,7 +28,7 @@ def send_to_openrouter(messages: list, model: str = "nousresearch/deephermes-3-m
         "HTTP-Referer": "https://localhost", # OpenRouter requires this
         "X-Title": "Terminal LLM Client" # Optional title 
     }
-
+    
     payload = {
         "model": model,
         "messages": messages
@@ -58,57 +52,32 @@ def format_response(response: Dict[Any, Any]) -> str:
         print(f"Full response: {json.dumps(response, indent=2)}", file=sys.stderr)
         return "Error: Could not parse LLM response"
 
-<<<<<<< HEAD
 def interactive_mode(model, api_key, system_prompt_text=None):
-=======
-async def interactive_mode(model, api_key, system_prompt_text=None, mcp_config=None): # Changed to async def, added mcp_config
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
     """Run the interactive chat mode."""
     print("OpenRouter Interactive Mode (Ctrl+C or type 'exit' to quit)")
     print(f"Using model: {model}")
     if system_prompt_text:
         print(f"System Prompt: {system_prompt_text}")
-<<<<<<< HEAD
     print("-" * 50)
     
-=======
-    if mcp_config: # Added to print MCP config if present
-        print(f"MCP Config loaded: {json.dumps(mcp_config, indent=2)}") # Example, can be more subtle
-    print("-" * 50)
-
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
     if system_prompt_text:
         conversation_history = [{"role": "system", "content": system_prompt_text}]
     else:
         conversation_history = []
-<<<<<<< HEAD
         
-=======
-
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
     try:
         while True:
             prompt = input("\nYou: ")
             if prompt.strip().lower() in ["exit", "quit"]:
                 break
-<<<<<<< HEAD
             
             conversation_history.append({"role": "user", "content": prompt})
                 
-=======
-
-            conversation_history.append({"role": "user", "content": prompt})
-
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
             print("\nThinking...", end="\r")
             response_data = send_to_openrouter(conversation_history, model, api_key)
             if response_data:
                 print(" " * 10, end="\r")  # Clear "Thinking..."
-<<<<<<< HEAD
                 
-=======
-
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
                 try:
                     assistant_message_object = response_data["choices"][0]["message"]
                 except (KeyError, IndexError, TypeError) as e:
@@ -124,7 +93,6 @@ async def interactive_mode(model, api_key, system_prompt_text=None, mcp_config=N
                     for tool_call in tool_calls:
                         tool_call_id = tool_call.get("id")
                         function_call = tool_call.get("function", {})
-<<<<<<< HEAD
                         tool_name = function_call.get("name")
                         tool_arguments = function_call.get("arguments") # Often a JSON string
 
@@ -141,41 +109,6 @@ async def interactive_mode(model, api_key, system_prompt_text=None, mcp_config=N
 
                     print("\nThinking...", end="\r")
                     final_response_data = send_to_openrouter(conversation_history, model, api_key)
-=======
-                        llm_tool_name = function_call.get("name") # Renamed for clarity
-                        arguments_str = function_call.get("arguments") # Renamed for clarity
-                        
-                        actual_tool_response_content = ""
-                        # Check if mcp_config is present and contains valid config for the tool_name
-                        can_execute_mcp = False
-                        if mcp_config and "tools" in mcp_config and llm_tool_name in mcp_config["tools"]:
-                            tool_mcp_details = mcp_config["tools"][llm_tool_name]
-                            if tool_mcp_details.get("server_url") and tool_mcp_details.get("mcp_tool_name"):
-                                can_execute_mcp = True
-
-                        if can_execute_mcp:
-                            print(f"\nCalling MCP Tool '{llm_tool_name}' via mcp_adapter...")
-                            sys.stdout.flush() # Ensure print statements appear before async operations that might block/log
-                            print("\nCalling MCP Tool...", end="\r")
-                            actual_tool_response_content = await execute_mcp_tool(llm_tool_name, arguments_str, mcp_config)
-                            print(" " * 20, end="\r") # Clear "Calling MCP Tool..."
-                            print(f"LLM Tool Call to '{llm_tool_name}' status/result:\n{actual_tool_response_content}")
-                        else:
-                            print(f"\nLLM requests tool: {llm_tool_name} with arguments: {arguments_str} (ID: {tool_call_id}). MCP config not loaded or tool '{llm_tool_name}' not found/incomplete in config. Simulating tool execution.")
-                            actual_tool_response_content = f"Simulated output for {llm_tool_name} (MCP not configured or tool details missing)."
-
-                        tool_response_message = {
-                            "role": "tool",
-                            "tool_call_id": tool_call_id,
-                            "name": llm_tool_name, 
-                            "content": actual_tool_response_content # Use actual or simulated content
-                        }
-                        conversation_history.append(tool_response_message)
-
-                    # After processing all tool calls (if any), send history back to LLM
-                    print("\nThinking...", end="\r")
-                    final_response_data = send_to_openrouter(conversation_history, model, api_key) # This is synchronous
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
                     print(" " * 10, end="\r") # Clear "Thinking..."
 
                     if final_response_data:
@@ -208,36 +141,17 @@ def main():
     parser.add_argument("--model", "-m", default="nousresearch/deephermes-3-mistral-24b-preview:free", help="Model to use")
     parser.add_argument("--api-key", "-k", help="OpenRouter API key")
     parser.add_argument("--system-prompt", "-sp", help="An initial system prompt for the conversation")
-<<<<<<< HEAD
-=======
-    parser.add_argument("--mcp-config", help="Path to the MCP server configuration JSON file.") # Added
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
     parser.add_argument("--interactive", "-i", action="store_true", help="Run in interactive mode")
     parser.add_argument("--chat", action="store_true", help="Shortcut for interactive mode")
     args = parser.parse_args()
-
-    mcp_config_data = None # Added
-    if args.mcp_config:    # Added
-        mcp_config_data = load_mcp_config(args.mcp_config) 
-        if mcp_config_data:
-            print(f"MCP Config loaded from {args.mcp_config}")
-        else:
-            print(f"Failed to load MCP Config from {args.mcp_config}")
-
+    
     # Start interactive mode if explicitly requested with -i or --chat
     # or if no prompt was provided
     if args.interactive or args.chat or not args.prompt:
-<<<<<<< HEAD
         interactive_mode(args.model, args.api_key, args.system_prompt)
     else:
         # Join all prompt arguments into a single string
         # System prompt is not used in non-interactive mode in this version
-=======
-        asyncio.run(interactive_mode(args.model, args.api_key, args.system_prompt, mcp_config_data)) # Changed to asyncio.run and pass mcp_config_data
-    else:
-        # Join all prompt arguments into a single string
-        # System prompt and MCP config are not used in non-interactive mode in this version
->>>>>>> 6572360b9aabf8a9413e6352afe67ca2ab333313
         prompt = " ".join(args.prompt)
         response = send_to_openrouter([{"role": "user", "content": prompt}], args.model, args.api_key)
         if response:
