@@ -1,0 +1,9 @@
+{
+  "tools": {
+    "mcp_echo": {
+      "server_url": "http://localhost:8001/mcp",
+      "mcp_tool_name": "echo_tool",
+      "transport": "streamable-http"
+    }
+  }
+}
